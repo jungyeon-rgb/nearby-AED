@@ -1,9 +1,10 @@
 import "./App.css";
+import Geolocation from "./components/Geolocation.tsx";
 
 function App() {
   return (
     <>
-      <h1> 내 주위 제세동기입니다 ♥️</h1>
+      <Geolocation />
     </>
   );
 }
