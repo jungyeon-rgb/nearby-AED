@@ -1,34 +1,63 @@
-import axios from "axios";
+import { useEffect, useState } from "react";
 
-const onGeoOk = (position: GeolocationPosition) => {
-  const lat = position.coords.latitude;
-  const lon = position.coords.longitude;
+declare global {
+  interface Window {
+    kakao: any;
+  }
+}
 
-  // Kakao REST API에 get 요청을 보냅니다.
-  // 파라미터 x, y에 lon, lat을 넣어주고 API_KEY를 Authorization 헤더에 넣어줍니다.
-  axios
-    .get(
-      `https://dapi.kakao.com/v2/local/geo/coord2address.json?x=${lon}&y=${lat}&input_coord=WGS84`,
+export default function Geolocation() {
+  const [map, setMap] = useState<any>();
+  const [marker, setMarker] = useState<any>();
+
+  // 1) 카카오맵 불러오기
+  useEffect(() => {
+    window.kakao.maps.load(() => {
+      const container = document.getElementById("map");
+      const options = {
+        center: new window.kakao.maps.LatLng(33.450701, 126.570667),
+        level: 3,
+      };
+
+      setMap(new window.kakao.maps.Map(container, options));
+      setMarker(new window.kakao.maps.Marker());
+    });
+  }, []);
+
+  // 2) 현재 위치 함수
+  const getCurrentPosBtn = () => {
+    navigator.geolocation.getCurrentPosition(
+      getPosSuccess,
+      () => alert("위치 정보를 가져오는데 실패했습니다."),
       {
-        headers: { Authorization: `KakaoAK ${process.env.REACT_APP_REST_API}` },
+        enableHighAccuracy: true,
+        maximumAge: 30000,
+        timeout: 27000,
       }
-    )
-    .then((res) => {
-      console.log(res.data.documents);
-      dispatch(changeRegion(res.data.documents[0].address.region_1depth_name));
-      dispatch(changeCity(res.data.documents[0].address.region_2depth_name));
-    })
-    .catch((e) => console.log(e));
-};
+    );
+  };
 
-const onGeoError = () => {
-  alert("위치권한을 확인해주세요");
-};
+  // 3) 정상적으로 현재위치 가져올 경우 실행
+  const getPosSuccess = (pos: GeolocationPosition) => {
+    // 현재 위치(위도, 경도) 가져온다.
+    const currentPos = new window.kakao.maps.LatLng(
+      pos.coords.latitude, // 위도
+      pos.coords.longitude // 경도
+    );
+    // 지도를 이동 시킨다.
+    map.panTo(currentPos);
 
-navigator.geolocation.getCurrentPosition(onGeoOk, onGeoError);
+    // 기존 마커를 제거하고 새로운 마커를 넣는다.
+    marker.setMap(null);
+    marker.setPosition(currentPos);
+    marker.setMap(map);
+  };
 
-export const Geolocation = () => {
-  return "현재위치컴포넌트입니다";
-};
-
-export default Geolocation;
+  return (
+    <div>
+      <div id="map" style={{ width: "100%", height: "400px" }}></div>
+      <div onClick={getCurrentPosBtn}>현재 위치</div>
+      <p>테스트</p>
+    </div>
+  );
+}
